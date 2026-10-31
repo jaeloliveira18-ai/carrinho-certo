@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Carrinho Certo</title>
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-full flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+
+    <!-- CABEÇALHO -->
+    <header class="bg-slate-800 border-b border-slate-700/60 sticky top-0 z-40 px-4 py-3 shadow-md">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <div class="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-emerald-500/10 border border-slate-700/60 flex items-center justify-center bg-slate-900">
+                    <img src="icon-192.png" alt="Carrinho Certo" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Carrinho Certo</h1>
+                    <p class="text-xs text-emerald-400 font-medium flex items-center gap-1">
+                        <span id="offline-badge" class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> 
+                        <span id="connection-status">Online • Open Food Facts</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openCatalogModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all border border-slate-600">
+                    <i class="fa-solid fa-database text-emerald-400"></i> Catálogo (<span id="cat-badge-count">0</span>)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 max-w-md w-full mx-auto p-4 overflow-y-auto hide-scrollbar pb-28">
+        
+        <!-- RESUMO DO TOTAL -->
+        <div class="bg-gradient-to-br from-slate-800 to-slate-800/80 border border-slate-700/80 rounded-2xl p-4 mb-4 shadow-xl relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total da Compra</span>
+                    <h2 id="total-price" class="text-3xl font-extrabold text-emerald-400 mt-0.5">R$ 0,00</h2>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-medium text-slate-400">Itens no Carrinho</span>
+                    <p id="total-items-count" class="text-lg font-bold text-slate-200">0 un</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-slate-700/60 text-xs text-slate-400">
+                <span id="unique-items-count">0 produtos diferentes</span>
+                <button onclick="clearCart()" class="text-rose-400 hover:text-rose-300 font-medium transition-colors flex items-center gap-1">
+                    <i class="fa-solid fa-trash-can"></i> Limpar Carrinho
+                </button>
+            </div>
+        </div>
+
+        <!-- LISTAGEM DE ITENS -->
+        <div class="space-y-3">
+            <div class="flex justify-between items-center mb-1">
+                <h3 class="text-sm font-bold text-slate-300">Produtos no Carrinho</h3>
+                <span class="text-xs text-slate-500">Toque em + ou - para alterar</span>
+            </div>
+            
+            <div id="cart-items-container" class="space-y-2.5">
+                <!-- Preenchido dinamicamente -->
+            </div>
+
+            <div id="empty-cart-state" class="text-center py-12 px-4 border-2 border-dashed border-slate-800 rounded-2xl">
+                <div class="w-16 h-16 bg-slate-800 text-slate-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl overflow-hidden">
+                    <img src="icon-192.png" alt="Carrinho" class="w-full h-full object-cover opacity-30 grayscale">
+                </div>
+                <h4 class="font-bold text-slate-300 text-sm">O seu carrinho está vazio</h4>
+                <p class="text-xs text-slate-500 mt-1 max-w-[240px] mx-auto">Aponte a câmara para a etiqueta da prateleira. O nome é identificado automaticamente via Open Food Facts.</p>
+                <button onclick="openScannerModal()" class="mt-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20 inline-flex items-center gap-2">
+                    <i class="fa-solid fa-barcode text-sm"></i> Escanear Prateleira Agora
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- BARRA INFERIOR / BOTÃO FLUTUANTE -->
+    <footer class="bg-slate-800/95 backdrop-blur border-t border-slate-700/80 fixed bottom-0 left-0 right-0 z-30 p-3 shadow-2xl">
+        <div class="max-w-md mx-auto flex items-center gap-2">
+            <button onclick="openScannerModal()" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 text-sm">
+                <i class="fa-solid fa-barcode text-lg"></i> Escanear Prateleira
+            </button>
+            <button onclick="openManualAddModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-3.5 rounded-2xl font-semibold text-xs flex items-center justify-center gap-1.5 border border-slate-600 transition-all active:scale-95" title="Adicionar Manualmente">
+                <i class="fa-solid fa-plus text-emerald-400 text-sm"></i> Manual
+            </button>
+        </div>
+    </footer>
+
+    <!-- MODAL DE SCANNER -->
+    <div id="scanner-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex flex-col justify-between p-4">
+        <div class="flex justify-between items-center text-white">
+            <div>
+                <h3 class="font-bold text-base">Escanear Código de Barras</h3>
+                <p class="text-xs text-slate-400">Aponte para o código de barras da prateleira</p>
+            </div>
+            <button onclick="closeScannerModal()" class="w-10 h-10 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-lg hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="my-auto w-full max-w-sm mx-auto overflow-hidden rounded-3xl border-2 border-emerald-500/50 shadow-2xl bg-black relative aspect-square flex items-center justify-center">
+            <div id="reader" class="w-full h-full"></div>
+            <div class="absolute inset-x-0 top-1/2 h-0.5 bg-emerald-400 shadow-[0_0_12px_#34d399] animate-pulse pointer-events-none"></div>
+            
+            <div id="scan-feedback" class="absolute inset-0 bg-slate-950/85 backdrop-blur-sm hidden flex-col items-center justify-center gap-3 p-4 text-center">
+                <div class="w-10 h-10 border-3 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+                <div>
+                    <h4 class="text-xs font-bold text-white mb-0.5">Consultando Open Food Facts...</h4>
+                    <p class="text-[11px] text-emerald-400 font-mono" id="scan-code-indicator">Buscando código...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center pb-2">
+            <button onclick="closeScannerModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-6 py-2.5 rounded-xl text-xs border border-slate-700 transition-all">
+                Cancelar Leitura
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE QUANTIDADE / PRODUTO -->
+    <div id="product-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-5 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex justify-between items-center mb-3">
+                <div>
+                    <h3 class="font-bold text-base text-white">Adicionar ao Carrinho</h3>
+                    <p id="product-source-badge" class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                        <i class="fa-solid fa-globe"></i> Base Open Food Facts
+                    </p>
+                </div>
+                <button onclick="closeProductModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="product-form" onsubmit="saveProductAndAddToCart(event)" class="space-y-3">
+                <input type="hidden" id="prod-barcode">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Código EAN</label>
+                    <input type="text" id="prod-code-display" disabled class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-400 font-mono">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nome do Produto</label>
+                    <input type="text" id="prod-name" required placeholder="Ex: Arroz Tio Jorge 5kg" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Preço Prateleira (R$)</label>
+                        <input type="number" step="0.01" id="prod-price" required placeholder="0,00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors font-bold text-emerald-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Quantidade</label>
+                        <input type="number" id="prod-qty" value="1" min="1" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                    </div>
+                </div>
+                
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 text-slate-950 font-bold py-3 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cart-plus"></i> Confirmar no Carrinho
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE CATÁLOGO / MEMÓRIA LOCAL -->
+    <div id="catalog-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-5 w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    <i class="fa-solid fa-database text-emerald-400"></i> Catálogo de Preços Salvos
+                </h3>
+                <button onclick="closeCatalogModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">Histórico de produtos memorizados no aparelho:</p>
+            
+            <div class="relative mb-3">
+                <i class="fa-solid fa-search absolute left-3 top-3 text-slate-500 text-xs"></i>
+                <input type="text" id="catalog-search" oninput="renderCatalogList()" placeholder="Buscar produto ou código..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+            </div>
+
+            <div id="catalog-list-container" class="flex-1 overflow-y-auto space-y-2 pr-1 hide-scrollbar">
+                <!-- Preenchido via JS -->
+            </div>
+            
+            <div class="pt-3 mt-3 border-t border-slate-700 flex justify-between items-center text-xs">
+                <span id="catalog-total-count" class="text-slate-400">0 produtos salvos</span>
+                <button onclick="closeCatalogModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl font-medium transition-all">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS DE EXECUÇÃO -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('ServiceWorker registado:', reg.scope))
+                    .catch(err => console.log('Erro ServiceWorker:', err));
+            });
+        }
+
+        let cart = JSON.parse(localStorage.getItem('carrinho_certo_cart')) || [];
+        let catalog = JSON.parse(localStorage.getItem('carrinho_certo_catalog')) || {
+            "7896678400364": { name: "SAL REFINADO BSB 1KG", price: 2.19, updatedAt: "31/10/2026" },
+            "7896102503432": { name: "BARBECUE QUERO 210G", price: 7.49, updatedAt: "31/10/2026" },
+            "7896102502091": { name: "MOLHO BARBECUE HEINZ 260G", price: 19.49, updatedAt: "31/10/2026" },
+            "7896007865802": { name: "MOLHO SALADA KENKO BARBECUE 180ML", price: 10.99, updatedAt: "31/10/2026" },
+            "7898191190883": { name: "MOLHO INGLES PROVATTI 150ML", price: 3.49, updatedAt: "31/10/2026" },
+            "7896007811403": { name: "MOLHO SAKU INGLES KENKO 150ML", price: 6.49, updatedAt: "31/10/2026" },
+            "7898909251899": { name: "MOLHO SHOYU FEDERAL 150ML", price: 4.99, updatedAt: "31/10/2026" },
+            "78910300300306": { name: "MISTURA LEITE MOCOCA 1 UN", price: 2.49, updatedAt: "31/10/2026" },
+            "7896700080439": { name: "CAL ARISCO 114G GALI 1 UN", price: 3.99, updatedAt: "31/10/2026" },
+            "789567245220": { name: "SALSICHA ANGLO 180G 1 UN", price: 6.29, updatedAt: "31/10/2026" },
+            "7891000249932": { name: "CALDO MAGGI 57G BACO 1 UN", price: 2.79, updatedAt: "31/10/2026" },
+            "7898191191965": { name: "TEMPERO PROVATTI 50G 1 UN", price: 4.19, updatedAt: "31/10/2026" },
+            "7894900029604": { name: "REFRIGERANTE COCA COLA 1 UN", price: 3.99, updatedAt: "31/10/2026" },
+            "7896354100700": { name: "LEITE MARAJOARA 1L 1 UN", price: 5.39, updatedAt: "31/10/2026" }
+        };
+        
+        let html5QrCode = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartUI();
+            updateCatalogBadge();
+            checkOnlineStatus();
+            window.addEventListener('online', checkOnlineStatus);
+            window.addEventListener('offline', checkOnlineStatus);
+        });
+
+        function checkOnlineStatus() {
+            const statusEl = document.getElementById('connection-status');
+            const badgeEl = document.getElementById('offline-badge');
+            if (navigator.onLine) {
+                statusEl.textContent = "Online • Open Food Facts";
+                badgeEl.className = "inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+            } else {
+                statusEl.textContent = "Offline • Banco Local";
+                badgeEl.className = "inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+            }
+        }
+
+        function updateCatalogBadge() {
+            const count = Object.keys(catalog).length;
+            const el = document.getElementById('cat-badge-count');
+            if (el) el.textContent = count;
+        }
+
+        async function fetchOpenFoodFactsProduct(barcode) {
+            const endpoints = [
+                `https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,product_name_pt,brands,quantity`,
+                `https://br.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,product_name_pt,brands,quantity`
+            ];
+
+            for (let url of endpoints) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+                    const resp = await fetch(url, {
+                        headers: { 'Accept': 'application/json' },
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data && data.product) {
+                            const p = data.product;
+                            const name = p.product_name_pt || p.product_name;
+                            const brand = p.brands ? ` - ${p.brands.split(',')[0].trim()}` : '';
+                            const qty = p.quantity ? ` ${p.quantity}` : '';
+                            if (name) {
+                                return `${name}${brand}${qty}`.toUpperCase().trim();
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.log("Consulta Open Food Facts indisponível:", err);
+                }
+            }
+            return null;
+        }
+
+        function openScannerModal() {
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            
+            setTimeout(() => {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
+                const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+                html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    config, 
+                    onScanSuccess, 
+                    onScanFailure
+                ).catch(err => {
+                    console.error("Erro na câmara:", err);
+                    alert("Acesso à câmara indisponível. Utilize a inserção manual!");
+                    closeScannerModal();
+                    openManualAddModal();
+                });
+            }, 300);
+        }
+
+        function closeScannerModal() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('scanner-modal').classList.add('hidden');
+                }).catch(err => console.error(err));
+            } else {
+                document.getElementById('scanner-modal').classList.add('hidden');
+            }
+        }
+
+        async function onScanSuccess(decodedText, decodedResult) {
+            closeScannerModal();
+            await handleBarcodeIdentified(decodedText);
+        }
+
+        function onScanFailure(error) {}
+
+        async function handleBarcodeIdentified(barcode) {
+            barcode = barcode.trim();
+            const sourceBadge = document.getElementById('product-source-badge');
+
+            if (catalog[barcode]) {
+                const prod = catalog[barcode];
+                document.getElementById('prod-barcode').value = barcode;
+                document.getElementById('prod-code-display').value = barcode;
+                document.getElementById('prod-name').value = prod.name;
+                document.getElementById('prod-price').value = prod.price ? prod.price.toFixed(2) : '';
+                document.getElementById('prod-qty').value = '1';
+                
+                sourceBadge.innerHTML = `<i class="fa-solid fa-database"></i> Produto memorizado localmente`;
+                sourceBadge.className = "text-[10px] text-emerald-400 font-medium flex items-center gap-1";
+                openProductModal();
+                return;
+            }
+
+            let offName = null;
+            if (navigator.onLine) {
+                const feedback = document.getElementById('scan-feedback');
+                document.getElementById('scan-code-indicator').textContent = `Código: ${barcode}`;
+                feedback.classList.remove('hidden');
+                feedback.classList.add('flex');
+
+                offName = await fetchOpenFoodFactsProduct(barcode);
+
+                feedback.classList.add('hidden');
+                feedback.classList.remove('flex');
+            }
+
+            document.getElementById('prod-barcode').value = barcode;
+            document.getElementById('prod-code-display').value = barcode;
+            document.getElementById('prod-name').value = offName || '';
+            document.getElementById('prod-price').value = '';
+            document.getElementById('prod-qty').value = '1';
+
+            if (offName) {
+                sourceBadge.innerHTML = `<i class="fa-solid fa-earth-americas text-teal-400"></i> Nome encontrado no Open Food Facts`;
+                sourceBadge.className = "text-[10px] text-teal-400 font-medium flex items-center gap-1";
+            } else {
+                sourceBadge.innerHTML = `<i class="fa-solid fa-tag text-amber-400"></i> Novo item (indique nome e preço)`;
+                sourceBadge.className = "text-[10px] text-amber-400 font-medium flex items-center gap-1";
+            }
+
+            openProductModal();
+        }
+
+        function openProductModal() {
+            const modal = document.getElementById('product-modal');
+            modal.classList.remove('hidden');
+            const qtyInput = document.getElementById('prod-qty');
+            const priceInput = document.getElementById('prod-price');
+            const nameInput = document.getElementById('prod-name');
+
+            if (nameInput.value && priceInput.value) {
+                qtyInput.focus();
+                qtyInput.select();
+            } else if (nameInput.value) {
+                priceInput.focus();
+            } else {
+                nameInput.focus();
+            }
+        }
+
+        function openManualAddModal() {
+            const randomCode = 'MANUAL-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('prod-barcode').value = randomCode;
+            document.getElementById('prod-code-display').value = 'Novo Produto (Manual)';
+            document.getElementById('prod-name').value = '';
+            document.getElementById('prod-price').value = '';
+            document.getElementById('prod-qty').value = '1';
+            
+            const sourceBadge = document.getElementById('product-source-badge');
+            sourceBadge.innerHTML = `<i class="fa-solid fa-keyboard"></i> Inserção manual`;
+            sourceBadge.className = "text-[10px] text-slate-400 font-medium flex items-center gap-1";
+            
+            document.getElementById('product-modal').classList.remove('hidden');
+            document.getElementById('prod-name').focus();
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+        }
+
+        function saveProductAndAddToCart(e) {
+            e.preventDefault();
+            const barcode = document.getElementById('prod-barcode').value;
+            const name = document.getElementById('prod-name').value.trim();
+            const price = parseFloat(document.getElementById('prod-price').value);
+            const qty = parseInt(document.getElementById('prod-qty').value);
+            const today = new Date().toLocaleDateString('pt-BR');
+
+            catalog[barcode] = { name, price, updatedAt: today };
+            localStorage.setItem('carrinho_certo_catalog', JSON.stringify(catalog));
+            updateCatalogBadge();
+
+            addToCartDirect(barcode, name, price, qty);
+            closeProductModal();
+        }
+
+        function addToCartDirect(barcode, name, price, qty) {
+            const existingIndex = cart.findIndex(item => item.barcode === barcode);
+            if (existingIndex > -1) {
+                cart[existingIndex].qty += qty;
+            } else {
+                cart.push({ barcode, name, price, qty });
+            }
+            saveCart();
+            updateCartUI();
+        }
+
+        function updateQuantity(barcode, delta) {
+            const item = cart.find(i => i.barcode === barcode);
+            if (item) {
+                item.qty += delta;
+                if (item.qty <= 0) {
+                    cart = cart.filter(i => i.barcode !== barcode);
+                }
+                saveCart();
+                updateCartUI();
+            }
+        }
+
+        function clearCart() {
+            if (confirm("Deseja realmente limpar todos os itens do carrinho?")) {
+                cart = [];
+                saveCart();
+                updateCartUI();
+            }
+        }
+
+        function saveCart() {
+            localStorage.setItem('carrinho_certo_cart', JSON.stringify(cart));
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items-container');
+            const emptyState = document.getElementById('empty-cart-state');
+            const totalPriceEl = document.getElementById('total-price');
+            const totalItemsCountEl = document.getElementById('total-items-count');
+            const uniqueItemsCountEl = document.getElementById('unique-items-count');
+
+            if (cart.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                totalPriceEl.textContent = 'R$ 0,00';
+                totalItemsCountEl.textContent = '0 un';
+                uniqueItemsCountEl.textContent = '0 produtos diferentes';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            let html = '';
+            let totalVal = 0;
+            let totalUnits = 0;
+
+            cart.forEach(item => {
+                const subtotal = item.price * item.qty;
+                totalVal += subtotal;
+                totalUnits += item.qty;
+
+                html += `
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between shadow-md">
+                        <div class="flex-1 pr-2">
+                            <h4 class="font-semibold text-xs text-white leading-snug">${item.name}</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs text-emerald-400 font-bold">R$ ${item.price.toFixed(2).replace('.', ',')} un</span>
+                                <span class="text-[10px] text-slate-500">• Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-700/60">
+                            <button onclick="updateQuantity('${item.barcode}', -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition-colors">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
+                            <span class="w-6 text-center text-xs font-bold text-white">${item.qty}</span>
+                            <button onclick="updateQuantity('${item.barcode}', 1)" class="w-7 h-7 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center text-xs font-bold transition-colors">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            totalPriceEl.textContent = `R$ ${totalVal.toFixed(2).replace('.', ',')}`;
+            totalItemsCountEl.textContent = `${totalUnits} un`;
+            uniqueItemsCountEl.textContent = `${cart.length} produtos diferentes`;
+        }
+
+        function openCatalogModal() {
+            renderCatalogList();
+            document.getElementById('catalog-modal').classList.remove('hidden');
+        }
+
+        function closeCatalogModal() {
+            document.getElementById('catalog-modal').classList.add('hidden');
+        }
+
+        function renderCatalogList() {
+            const container = document.getElementById('catalog-list-container');
+            const searchVal = document.getElementById('catalog-search').value.toLowerCase();
+            const countEl = document.getElementById('catalog-total-count');
+
+            const keys = Object.keys(catalog);
+            countEl.textContent = `${keys.length} produtos gravados no aparelho`;
+
+            let html = '';
+            let count = 0;
+
+            keys.forEach(barcode => {
+                const prod = catalog[barcode];
+                if (searchVal && !prod.name.toLowerCase().includes(searchVal) && !barcode.includes(searchVal)) {
+                    return;
+                }
+                count++;
+                html += `
+                    <div class="bg-slate-900 border border-slate-700/60 rounded-xl p-3 flex items-center justify-between">
+                        <div>
+                            <h5 class="font-semibold text-xs text-white">${prod.name}</h5>
+                            <p class="text-[10px] text-slate-400 font-mono mt-0.5">EAN: ${barcode} • <span class="text-emerald-400 font-bold">R$ ${prod.price.toFixed(2).replace('.', ',')}</span></p>
+                            <span class="text-[9px] text-slate-500">Última leitura: ${prod.updatedAt || 'Hoje'}</span>
+                        </div>
+                        <button onclick="addToCartDirect('${barcode}', '${prod.name}', ${prod.price}, 1); closeCatalogModal();" class="bg-emerald-500/10 hover:bg-emerald-500 hover:text-slate-950 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/20 transition-all flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Adicionar
+                        </button>
+                    </div>
+                `;
+            });
+
+            if (count === 0) {
+                html = `<p class="text-xs text-slate-500 text-center py-6">Nenhum produto encontrado no catálogo.</p>`;
+            }
+
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
